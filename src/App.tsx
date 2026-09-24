@@ -130,8 +130,8 @@ export default function App() {
   const [shop, setShop] = useState<ShopProfile>(() => {
     const saved = storage.load('pos_shop_profile_v1');
     return saved ? saved : {
-      name: 'DEEPASMITA SANITARY',
-      category: 'Hardware, Paints & Sanitary Hub',
+      name: 'MY SHOP',
+      category: 'Retail & Wholesale Hub',
       phone: '',
       gstin: '',
       upi: '',
@@ -141,11 +141,7 @@ export default function App() {
 
   const [catalog, setCatalog] = useState<CatalogItem[]>(() => {
     const saved = storage.load('pos_catalog_v1');
-    return saved ? saved : [
-      { id: '1', name: 'Burger Paint Apex (4L)', price: 2500, stock: 15 },
-      { id: '2', name: 'Asian Paints Ultima', price: 5205, stock: 4 },
-      { id: '3', name: 'Nerolac Gloss Enamel', price: 6000, stock: 25 }
-    ];
+    return saved ? saved : [];
   });
 
   const [invoices, setInvoices] = useState<Invoice[]>(() => {
@@ -359,244 +355,244 @@ export default function App() {
           </script>
         </body>
       </html>
-    `);
-    printWindow.document.close();
-  };
+  `);
+  printWindow.document.close();
+};
 
-  const handleDownloadPdf = (inv: Invoice) => {
-    const doc = new jsPDF('p', 'mm', 'a4');
-    const pageWidth = doc.internal.pageSize.getWidth();
-    const pageHeight = doc.internal.pageSize.getHeight();
-    
-    doc.setFillColor(15, 23, 42);
-    doc.rect(0, 0, pageWidth, 42, 'F');
-    doc.setFillColor(99, 102, 241);
-    doc.rect(0, 42, pageWidth, 1.5, 'F');
+const handleDownloadPdf = (inv: Invoice) => {
+  const doc = new jsPDF('p', 'mm', 'a4');
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+  
+  doc.setFillColor(15, 23, 42);
+  doc.rect(0, 0, pageWidth, 42, 'F');
+  doc.setFillColor(99, 102, 241);
+  doc.rect(0, 42, pageWidth, 1.5, 'F');
 
-    doc.setTextColor(255, 255, 255);
+  doc.setTextColor(255, 255, 255);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(20);
+  doc.text((shop.name || 'STORE').toUpperCase(), 15, 16);
+
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9);
+  doc.setTextColor(226, 232, 240);
+  doc.text(shop.category || 'Retail Showroom', 15, 23);
+  doc.text(`Phone: ${shop.phone || 'N/A'}  |  Address: ${shop.address || 'N/A'}`, 15, 29);
+  if (shop.gstin) {
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(20);
-    doc.text((shop.name || 'STORE').toUpperCase(), 15, 16);
+    doc.setTextColor(244, 114, 182);
+    doc.text(`GSTIN: ${shop.gstin}`, 15, 36);
+  }
 
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(9);
-    doc.setTextColor(226, 232, 240);
-    doc.text(shop.category || 'Retail Showroom', 15, 23);
-    doc.text(`Phone: ${shop.phone || 'N/A'}  |  Address: ${shop.address || 'N/A'}`, 15, 29);
-    if (shop.gstin) {
-      doc.setFont('helvetica', 'bold');
-      doc.setTextColor(244, 114, 182);
-      doc.text(`GSTIN: ${shop.gstin}`, 15, 36);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(15);
+  doc.setTextColor(255, 255, 255);
+  doc.text('TAX INVOICE', pageWidth - 15, 16, { align: 'right' });
+
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9);
+  doc.setTextColor(226, 232, 240);
+  doc.text(`Invoice No: ${inv.id}`, pageWidth - 15, 23, { align: 'right' });
+  doc.text(`Date: ${inv.date}`, pageWidth - 15, 29, { align: 'right' });
+  doc.text(`Time: ${inv.time}`, pageWidth - 15, 35, { align: 'right' });
+
+  doc.setFillColor(248, 250, 252);
+  doc.setDrawColor(203, 213, 225);
+  doc.roundedRect(15, 50, pageWidth - 30, 18, 2, 2, 'FD');
+
+  doc.setTextColor(100, 116, 139);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(8);
+  doc.text('BILLED TO (CUSTOMER):', 20, 57);
+  
+  doc.setTextColor(15, 23, 42);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(11);
+  doc.text(inv.customerName, 20, 64);
+
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9);
+  doc.setTextColor(71, 85, 105);
+  doc.text(`Contact: ${inv.phone || 'N/A'}`, pageWidth - 20, 64, { align: 'right' });
+
+  let startY = 76;
+  doc.setFillColor(30, 41, 59);
+  doc.roundedRect(15, startY, pageWidth - 30, 9, 1, 1, 'F');
+  
+  doc.setTextColor(255, 255, 255);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(9);
+  doc.text('#', 19, startY + 6);
+  doc.text('Item Description', 32, startY + 6);
+  doc.text('Qty', 120, startY + 6, { align: 'center' });
+  doc.text('Rate (Rs)', 152, startY + 6, { align: 'right' });
+  doc.text('Total (Rs)', pageWidth - 19, startY + 6, { align: 'right' });
+
+  doc.setTextColor(15, 23, 42);
+  doc.setFont('helvetica', 'normal');
+  startY += 9;
+
+  inv.items.forEach((item, index) => {
+    if (index % 2 === 1) {
+      doc.setFillColor(248, 250, 252);
+      doc.rect(15, startY, pageWidth - 30, 9, 'F');
     }
 
+    doc.text((index + 1).toString(), 19, startY + 6);
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(15);
-    doc.setTextColor(255, 255, 255);
-    doc.text('TAX INVOICE', pageWidth - 15, 16, { align: 'right' });
-
+    doc.text(item.name, 32, startY + 6);
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(9);
-    doc.setTextColor(226, 232, 240);
-    doc.text(`Invoice No: ${inv.id}`, pageWidth - 15, 23, { align: 'right' });
-    doc.text(`Date: ${inv.date}`, pageWidth - 15, 29, { align: 'right' });
-    doc.text(`Time: ${inv.time}`, pageWidth - 15, 35, { align: 'right' });
+    doc.text(item.qty.toString(), 120, startY + 6, { align: 'center' });
+    doc.text(item.price.toFixed(2), 152, startY + 6, { align: 'right' });
+    doc.text((item.price * item.qty).toFixed(2), pageWidth - 19, startY + 6, { align: 'right' });
 
-    doc.setFillColor(248, 250, 252);
-    doc.setDrawColor(203, 213, 225);
-    doc.roundedRect(15, 50, pageWidth - 30, 18, 2, 2, 'FD');
-
-    doc.setTextColor(100, 116, 139);
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(8);
-    doc.text('BILLED TO (CUSTOMER):', 20, 57);
-    
-    doc.setTextColor(15, 23, 42);
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(11);
-    doc.text(inv.customerName, 20, 64);
-
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(9);
-    doc.setTextColor(71, 85, 105);
-    doc.text(`Contact: ${inv.phone || 'N/A'}`, pageWidth - 20, 64, { align: 'right' });
-
-    let startY = 76;
-    doc.setFillColor(30, 41, 59);
-    doc.roundedRect(15, startY, pageWidth - 30, 9, 1, 1, 'F');
-    
-    doc.setTextColor(255, 255, 255);
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(9);
-    doc.text('#', 19, startY + 6);
-    doc.text('Item Description', 32, startY + 6);
-    doc.text('Qty', 120, startY + 6, { align: 'center' });
-    doc.text('Rate (Rs)', 152, startY + 6, { align: 'right' });
-    doc.text('Total (Rs)', pageWidth - 19, startY + 6, { align: 'right' });
-
-    doc.setTextColor(15, 23, 42);
-    doc.setFont('helvetica', 'normal');
+    doc.setDrawColor(241, 245, 249);
+    doc.line(15, startY + 9, pageWidth - 15, startY + 9);
     startY += 9;
+  });
 
-    inv.items.forEach((item, index) => {
-      if (index % 2 === 1) {
-        doc.setFillColor(248, 250, 252);
-        doc.rect(15, startY, pageWidth - 30, 9, 'F');
-      }
+  startY += 12;
 
-      doc.text((index + 1).toString(), 19, startY + 6);
+  const summaryX = pageWidth - 90;
+  const invGstRate = inv.gstRate || 0;
+  const invGstAmt = inv.gst || 0;
+
+  if (shop.upi && inv.balanceDue > 0) {
+    try {
+      const qrUrl = getUpiQrUrl(shop.upi, inv.balanceDue, shop.name);
+      doc.addImage(qrUrl, 'PNG', 15, startY - 2, 36, 36);
+      
       doc.setFont('helvetica', 'bold');
-      doc.text(item.name, 32, startY + 6);
+      doc.setFontSize(8);
+      doc.setTextColor(15, 23, 42);
+      doc.text('Scan & Pay Balance via UPI', 15, startY + 39);
       doc.setFont('helvetica', 'normal');
-      doc.text(item.qty.toString(), 120, startY + 6, { align: 'center' });
-      doc.text(item.price.toFixed(2), 152, startY + 6, { align: 'right' });
-      doc.text((item.price * item.qty).toFixed(2), pageWidth - 19, startY + 6, { align: 'right' });
-
-      doc.setDrawColor(241, 245, 249);
-      doc.line(15, startY + 9, pageWidth - 15, startY + 9);
-      startY += 9;
-    });
-
-    startY += 12;
-
-    const summaryX = pageWidth - 90;
-    const invGstRate = inv.gstRate || 0;
-    const invGstAmt = inv.gst || 0;
-
-    if (shop.upi && inv.balanceDue > 0) {
-      try {
-        const qrUrl = getUpiQrUrl(shop.upi, inv.balanceDue, shop.name);
-        doc.addImage(qrUrl, 'PNG', 15, startY - 2, 36, 36);
-        
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(8);
-        doc.setTextColor(15, 23, 42);
-        doc.text('Scan & Pay Balance via UPI', 15, startY + 39);
-        doc.setFont('helvetica', 'normal');
-        doc.setFontSize(7.5);
-        doc.setTextColor(100, 116, 139);
-        doc.text(shop.upi, 15, startY + 43);
-      } catch (e) {
-        console.error('QR load error in PDF', e);
-      }
+      doc.setFontSize(7.5);
+      doc.setTextColor(100, 116, 139);
+      doc.text(shop.upi, 15, startY + 43);
+    } catch (e) {
+      console.error('QR load error in PDF', e);
     }
+  }
 
-    doc.setFontSize(9);
-    doc.setTextColor(71, 85, 105);
-    doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9);
+  doc.setTextColor(71, 85, 105);
+  doc.setFont('helvetica', 'normal');
 
-    doc.text('Subtotal:', summaryX, startY);
-    doc.text(`Rs ${inv.subtotal.toFixed(2)}`, pageWidth - 18, startY, { align: 'right' });
+  doc.text('Subtotal:', summaryX, startY);
+  doc.text(`Rs ${inv.subtotal.toFixed(2)}`, pageWidth - 18, startY, { align: 'right' });
 
-    if (invGstRate > 0 && invGstAmt > 0) {
-      startY += 6;
-      doc.text(`GST (${invGstRate}% Inclusive):`, summaryX, startY);
-      doc.text(`Rs ${invGstAmt.toFixed(2)}`, pageWidth - 18, startY, { align: 'right' });
-    }
-
-    startY += 8;
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(15, 23, 42);
-    doc.text('Grand Total:', summaryX, startY);
-    doc.text(`Rs ${inv.total.toFixed(2)}`, pageWidth - 18, startY, { align: 'right' });
-
+  if (invGstRate > 0 && invGstAmt > 0) {
     startY += 6;
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(71, 85, 105);
-    doc.text('Advance Paid:', summaryX, startY);
-    doc.text(`Rs ${inv.advancePaid.toFixed(2)}`, pageWidth - 18, startY, { align: 'right' });
+    doc.text(`GST (${invGstRate}% Inclusive):`, summaryX, startY);
+    doc.text(`Rs ${invGstAmt.toFixed(2)}`, pageWidth - 18, startY, { align: 'right' });
+  }
 
-    startY += 8;
-    doc.setFillColor(254, 226, 226);
-    doc.roundedRect(summaryX - 5, startY - 4, 77, 10, 2, 2, 'F');
-    doc.setTextColor(185, 28, 28);
-    doc.setFont('helvetica', 'bold');
-    doc.text('Balance Due:', summaryX, startY + 2.5);
-    doc.text(`Rs ${inv.balanceDue.toFixed(2)}`, pageWidth - 21, startY + 2.5, { align: 'right' });
+  startY += 8;
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(15, 23, 42);
+  doc.text('Grand Total:', summaryX, startY);
+  doc.text(`Rs ${inv.total.toFixed(2)}`, pageWidth - 18, startY, { align: 'right' });
 
-    doc.setTextColor(148, 163, 184);
-    doc.setFont('helvetica', 'italic');
-    doc.setFontSize(8);
-    doc.text('This is a computer-generated professional tax invoice and requires no physical signature.', 15, pageHeight - 12);
+  startY += 6;
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(71, 85, 105);
+  doc.text('Advance Paid:', summaryX, startY);
+  doc.text(`Rs ${inv.advancePaid.toFixed(2)}`, pageWidth - 18, startY, { align: 'right' });
 
-    doc.save(`Invoice_${inv.id.replace('#', '')}.pdf`);
-  };
+  startY += 8;
+  doc.setFillColor(254, 226, 226);
+  doc.roundedRect(summaryX - 5, startY - 4, 77, 10, 2, 2, 'F');
+  doc.setTextColor(185, 28, 28);
+  doc.setFont('helvetica', 'bold');
+  doc.text('Balance Due:', summaryX, startY + 2.5);
+  doc.text(`Rs ${inv.balanceDue.toFixed(2)}`, pageWidth - 21, startY + 2.5, { align: 'right' });
 
-  const openWhatsAppUrl = (url: string) => {
-    const link = document.createElement('a');
-    link.href = url;
-    link.target = '_blank';
-    link.rel = 'noopener noreferrer';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
+  doc.setTextColor(148, 163, 184);
+  doc.setFont('helvetica', 'italic');
+  doc.setFontSize(8);
+  doc.text('This is a computer-generated professional tax invoice and requires no physical signature.', 15, pageHeight - 12);
 
-  const sendWhatsApp = (inv: Invoice) => {
-    const rawDigits = (inv.phone || '').replace(/\D/g, '');
-    const cleanPhone = rawDigits.length >= 10 ? rawDigits.slice(-10) : '';
-    const itemsList = inv.items.map(i => i.name + ' (x' + i.qty + ') - Rs ' + (i.price * i.qty)).join('\n- ');
-    
-    const msg = 'TAX INVOICE: ' + (shop.name ? shop.name.toUpperCase() : 'STORE') + '\n' +
-      (shop.gstin ? 'GSTIN: ' + shop.gstin + '\n' : '') +
-      'Invoice: ' + inv.id + ' | Date: ' + inv.date + '\n' +
-      'Customer: ' + inv.customerName + '\n\n' +
-      'Items:\n- ' + itemsList + '\n\n' +
-      'Total Amount: Rs ' + inv.total.toFixed(2) + '\n' +
-      'Advance Paid: Rs ' + inv.advancePaid.toFixed(2) + '\n' +
-      'Balance Due: Rs ' + inv.balanceDue.toFixed(2) + '\n\n' +
-      (shop.upi ? 'Pay via Shop UPI Scanner / ID: ' + shop.upi + '\n\n' : '') +
-      'Thank you for your business!';
+  doc.save(`Invoice_${inv.id.replace('#', '')}.pdf`);
+};
 
-    const url = cleanPhone.length === 10
-      ? `https://api.whatsapp.com/send?phone=91${cleanPhone}&text=${encodeURIComponent(msg)}`
-      : `https://wa.me/?text=${encodeURIComponent(msg)}`;
+const openWhatsAppUrl = (url: string) => {
+  const link = document.createElement('a');
+  link.href = url;
+  link.target = '_blank';
+  link.rel = 'noopener noreferrer';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+};
 
-    openWhatsAppUrl(url);
-  };
+const sendWhatsApp = (inv: Invoice) => {
+  const rawDigits = (inv.phone || '').replace(/\D/g, '');
+  const cleanPhone = rawDigits.length >= 10 ? rawDigits.slice(-10) : '';
+  const itemsList = inv.items.map(i => i.name + ' (x' + i.qty + ') - Rs ' + (i.price * i.qty)).join('\n- ');
+  
+  const msg = 'TAX INVOICE: ' + (shop.name ? shop.name.toUpperCase() : 'STORE') + '\n' +
+    (shop.gstin ? 'GSTIN: ' + shop.gstin + '\n' : '') +
+    'Invoice: ' + inv.id + ' | Date: ' + inv.date + '\n' +
+    'Customer: ' + inv.customerName + '\n\n' +
+    'Items:\n- ' + itemsList + '\n\n' +
+    'Total Amount: Rs ' + inv.total.toFixed(2) + '\n' +
+    'Advance Paid: Rs ' + inv.advancePaid.toFixed(2) + '\n' +
+    'Balance Due: Rs ' + inv.balanceDue.toFixed(2) + '\n\n' +
+    (shop.upi ? 'Pay via Shop UPI Scanner / ID: ' + shop.upi + '\n\n' : '') +
+    'Thank you for your business!';
 
-  const sendPaymentReminder = (inv: Invoice) => {
-    const rawDigits = (inv.phone || '').replace(/\D/g, '');
-    const cleanPhone = rawDigits.length >= 10 ? rawDigits.slice(-10) : '';
+  const url = cleanPhone.length === 10
+    ? `https://api.whatsapp.com/send?phone=91${cleanPhone}&text=${encodeURIComponent(msg)}`
+    : `https://wa.me/?text=${encodeURIComponent(msg)}`;
 
-    const msg = 'PAYMENT REMINDER\n\n' +
-      'Dear ' + inv.customerName + ',\n' +
-      'This is a friendly reminder from ' + shop.name + ' regarding the pending balance for Invoice ' + inv.id + '.\n\n' +
-      'Total Bill: Rs ' + inv.total.toFixed(2) + '\n' +
-      'Advance Paid: Rs ' + inv.advancePaid.toFixed(2) + '\n' +
-      'Remaining Balance Due: Rs ' + inv.balanceDue.toFixed(2) + '\n\n' +
-      (shop.upi ? 'You can clear the payment using shop UPI ID:\nUPI ID: ' + shop.upi + '\n\n' : '') +
-      'Please complete the payment at your earliest convenience. Thank you!';
+  openWhatsAppUrl(url);
+};
 
-    const url = cleanPhone.length === 10 
-      ? `https://api.whatsapp.com/send?phone=91${cleanPhone}&text=${encodeURIComponent(msg)}`
-      : `https://wa.me/?text=${encodeURIComponent(msg)}`;
+const sendPaymentReminder = (inv: Invoice) => {
+  const rawDigits = (inv.phone || '').replace(/\D/g, '');
+  const cleanPhone = rawDigits.length >= 10 ? rawDigits.slice(-10) : '';
 
-    openWhatsAppUrl(url);
-  };
+  const msg = 'PAYMENT REMINDER\n\n' +
+    'Dear ' + inv.customerName + ',\n' +
+    'This is a friendly reminder from ' + shop.name + ' regarding the pending balance for Invoice ' + inv.id + '.\n\n' +
+    'Total Bill: Rs ' + inv.total.toFixed(2) + '\n' +
+    'Advance Paid: Rs ' + inv.advancePaid.toFixed(2) + '\n' +
+    'Remaining Balance Due: Rs ' + inv.balanceDue.toFixed(2) + '\n\n' +
+    (shop.upi ? 'You can clear the payment using shop UPI ID:\nUPI ID: ' + shop.upi + '\n\n' : '') +
+    'Please complete the payment at your earliest convenience. Thank you!';
 
-  const simpleHash = (str: string) => {
-    let hash = 0;
-    for (let i = 0; i < str.length; i++) {
-      const char = str.charCodeAt(i);
-      hash = (hash << 5) - hash + char;
-      hash |= 0;
-    }
-    return Math.abs(hash).toString(36).toUpperCase();
-  };
+  const url = cleanPhone.length === 10 
+    ? `https://api.whatsapp.com/send?phone=91${cleanPhone}&text=${encodeURIComponent(msg)}`
+    : `https://wa.me/?text=${encodeURIComponent(msg)}`;
 
-  const handleVerifyActivationKey = () => {
-    const cleanKey = activationKeyInput.trim().toUpperCase();
-    const encryptedPart = simpleHash(deviceFingerprint + SECRET_SALT);
-    const expectedKey = `SKB-${encryptedPart}-${deviceFingerprint.slice(-4)}`;
+  openWhatsAppUrl(url);
+};
 
-    if (cleanKey === expectedKey || cleanKey === 'MASTER-SKYBILL-2026') {
-      storage.save('pos_licensed_status_final', true);
-      setIsTrialExpired(false);
-      alert('Subscription Activated Successfully! Access Restored.');
-    } else {
-      alert('Invalid Activation Key! Please check with the developer.');
-    }
-  };
+const simpleHash = (str: string) => {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i);
+    hash = (hash << 5) - hash + char;
+    hash |= 0;
+  }
+  return Math.abs(hash).toString(36).toUpperCase();
+};
+
+const handleVerifyActivationKey = () => {
+  const cleanKey = activationKeyInput.trim().toUpperCase();
+  const encryptedPart = simpleHash(deviceFingerprint + SECRET_SALT);
+  const expectedKey = `SKB-${encryptedPart}-${deviceFingerprint.slice(-4)}`;
+
+  if (cleanKey === expectedKey || cleanKey === 'MASTER-SKYBILL-2026') {
+    storage.save('pos_licensed_status_final', true);
+    setIsTrialExpired(false);
+    alert('Subscription Activated Successfully! Access Restored.');
+  } else {
+    alert('Invalid Activation Key! Please check with the developer.');
+  }
+};
 
   const totalSalesAllTime = invoices.reduce((sum, inv) => sum + inv.total, 0);
   const totalBalanceDueAllTime = invoices.reduce((sum, inv) => sum + inv.balanceDue, 0);
@@ -935,496 +931,496 @@ export default function App() {
                 >
                   <ShieldCheck className="w-4 h-4" /> {editingInvoiceId ? 'Update & Save Bill' : 'Save & Generate Invoice'}
                 </button>
-              </div>
-            </div>
-
-          </div>
-        )}
-
-        {activeTab === 'catalog' && (
-          <div className="space-y-4 md:grid md:grid-cols-2 md:gap-6 md:space-y-0">
-            <form onSubmit={handleAddCatalogItem} className="bg-white p-6 md:p-8 rounded-3xl border border-slate-200/80 shadow-sm space-y-4 h-fit">
-              <h2 className="font-bold text-slate-900 text-xs uppercase tracking-wider flex items-center gap-2">
-                <Package className="w-4 h-4 text-indigo-600" /> Add New Item & Stock
-              </h2>
-              <div>
-                <label className="text-xs text-slate-600 font-semibold block mb-1">Item Name</label>
-                <input
-                  type="text"
-                  placeholder="e.g. Basin Mixer / Cable / Paint"
-                  value={newItemName}
-                  onChange={(e) => setNewItemName(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3.5 text-sm text-slate-900 font-medium outline-none shadow-inner focus:border-indigo-600"
-                />
-              </div>
-              <div>
-                <label className="text-xs text-slate-600 font-semibold block mb-1">Selling Price (Rs)</label>
-                <input
-                  type="number"
-                  placeholder="e.g. 3200"
-                  value={newItemPrice}
-                  onChange={(e) => setNewItemPrice(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3.5 text-sm text-slate-900 font-medium outline-none shadow-inner focus:border-indigo-600 font-mono"
-                />
-              </div>
-              <div>
-                <label className="text-xs text-slate-600 font-semibold block mb-1">Initial Stock Quantity</label>
-                <input
-                  type="number"
-                  placeholder="e.g. 20"
-                  value={newItemStock}
-                  onChange={(e) => setNewItemStock(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3.5 text-sm text-slate-900 font-medium outline-none shadow-inner focus:border-indigo-600 font-mono"
-                />
-              </div>
-              <button
-                type="submit"
-                className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:opacity-95 text-white rounded-2xl py-3.5 font-bold text-xs shadow-lg shadow-indigo-600/25 flex items-center justify-center gap-2 active:scale-[0.98] transition"
-              >
-                <Plus className="w-4 h-4" /> Add Item to Catalog
-              </button>
-            </form>
-
-            <div className="bg-white p-6 md:p-8 rounded-3xl border border-slate-200/80 shadow-sm">
-              <h3 className="font-bold text-slate-900 text-xs uppercase tracking-wider mb-4">Inventory Stock ({catalog.length})</h3>
-              {catalog.length === 0 ? (
-                <p className="text-xs text-slate-400 text-center py-6">No items added yet.</p>
-              ) : (
-                <div className="space-y-3 max-h-[500px] overflow-y-auto pr-1">
-                  {catalog.map((c) => (
-                    <div key={c.id} className="flex justify-between items-center p-4 bg-slate-50 border border-slate-200/80 rounded-2xl shadow-sm">
-                      <div>
-                        <p className="font-bold text-xs text-slate-900">{c.name}</p>
-                        <p className="text-xs text-indigo-600 font-bold mt-0.5 font-mono">Rs {c.price.toFixed(2)}</p>
-                      </div>
-                      <div className="flex items-center gap-4">
-                        <span className={`text-xs font-extrabold px-3 py-1 rounded-xl font-mono ${c.stock <= 5 ? 'bg-rose-50 text-rose-600 border border-rose-200' : 'bg-emerald-50 text-emerald-600 border border-emerald-200'}`}>
-                          Stock: {c.stock} {c.stock <= 5 ? '⚠️ Low' : ''}
-                        </span>
-                        <button onClick={() => setCatalog(catalog.filter(x => x.id !== c.id))} className="text-rose-500 p-2 hover:bg-rose-50 rounded-xl transition">
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
             </div>
           </div>
-        )}
 
-        {activeTab === 'history' && (
-          <div className="space-y-4">
-            
-            <div className="bg-white p-6 md:p-8 rounded-3xl border border-slate-200/80 shadow-sm space-y-4">
-              <h2 className="font-bold text-slate-900 text-xs uppercase tracking-wider flex items-center gap-2">
-                <History className="w-4 h-4 text-indigo-600" /> Past Invoices
-              </h2>
-              <div className="relative">
-                <Search className="w-4 h-4 text-slate-400 absolute left-4 top-4" />
-                <input
-                  type="text"
-                  placeholder="Search by name, phone, or invoice #"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl pl-11 pr-4 py-3 text-xs text-slate-900 font-medium outline-none shadow-inner focus:border-indigo-600"
-                />
-              </div>
+        </div>
+      )}
+
+      {activeTab === 'catalog' && (
+        <div className="space-y-4 md:grid md:grid-cols-2 md:gap-6 md:space-y-0">
+          <form onSubmit={handleAddCatalogItem} className="bg-white p-6 md:p-8 rounded-3xl border border-slate-200/80 shadow-sm space-y-4 h-fit">
+            <h2 className="font-bold text-slate-900 text-xs uppercase tracking-wider flex items-center gap-2">
+              <Package className="w-4 h-4 text-indigo-600" /> Add New Item & Stock
+            </h2>
+            <div>
+              <label className="text-xs text-slate-600 font-semibold block mb-1">Item Name</label>
+              <input
+                type="text"
+                placeholder="e.g. Basin Mixer / Cable / Paint"
+                value={newItemName}
+                onChange={(e) => setNewItemName(e.target.value)}
+                className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3.5 text-sm text-slate-900 font-medium outline-none shadow-inner focus:border-indigo-600"
+              />
             </div>
+            <div>
+              <label className="text-xs text-slate-600 font-semibold block mb-1">Selling Price (Rs)</label>
+              <input
+                type="number"
+                placeholder="e.g. 3200"
+                value={newItemPrice}
+                onChange={(e) => setNewItemPrice(e.target.value)}
+                className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3.5 text-sm text-slate-900 font-medium outline-none shadow-inner focus:border-indigo-600 font-mono"
+              />
+            </div>
+            <div>
+              <label className="text-xs text-slate-600 font-semibold block mb-1">Initial Stock Quantity</label>
+              <input
+                type="number"
+                placeholder="e.g. 20"
+                value={newItemStock}
+                onChange={(e) => setNewItemStock(e.target.value)}
+                className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3.5 text-sm text-slate-900 font-medium outline-none shadow-inner focus:border-indigo-600 font-mono"
+              />
+            </div>
+            <button
+              type="submit"
+              className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:opacity-95 text-white rounded-2xl py-3.5 font-bold text-xs shadow-lg shadow-indigo-600/25 flex items-center justify-center gap-2 active:scale-[0.98] transition"
+            >
+              <Plus className="w-4 h-4" /> Add Item to Catalog
+            </button>
+          </form>
 
-            {filteredInvoices.length === 0 ? (
-              <div className="bg-white p-8 rounded-3xl text-center text-xs text-slate-400 border border-slate-200/80 shadow-sm">
-                No invoice records found.
-              </div>
+          <div className="bg-white p-6 md:p-8 rounded-3xl border border-slate-200/80 shadow-sm">
+            <h3 className="font-bold text-slate-900 text-xs uppercase tracking-wider mb-4">Inventory Stock ({catalog.length})</h3>
+            {catalog.length === 0 ? (
+              <p className="text-xs text-slate-400 text-center py-6">No items added yet.</p>
             ) : (
-              <div className="md:grid md:grid-cols-2 lg:grid-cols-3 gap-6 space-y-4 md:space-y-0">
-                {filteredInvoices.map((inv) => (
-                  <div key={inv.id} className="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-sm space-y-4 transition hover:shadow-md flex flex-col justify-between">
-                    
+              <div className="space-y-3 max-h-[500px] overflow-y-auto pr-1">
+                {catalog.map((c) => (
+                  <div key={c.id} className="flex justify-between items-center p-4 bg-slate-50 border border-slate-200/80 rounded-2xl shadow-sm">
                     <div>
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs font-bold text-slate-900 bg-slate-100 px-2.5 py-1 rounded-lg border border-slate-200 font-mono">
-                              {inv.id}
-                            </span>
-                            <span className="text-xs text-slate-400 font-medium">
-                              {inv.date} • {inv.time}
-                            </span>
-                          </div>
-                          <h3 className="font-semibold text-slate-900 text-sm mt-2">{inv.customerName}</h3>
-                          <p className="text-xs text-slate-400 font-medium font-mono">{inv.phone || 'No Phone'}</p>
-                        </div>
-
-                        <div className="text-right">
-                          <span className="text-[10px] text-slate-400 block uppercase font-semibold">Balance Due</span>
-                          <span className={'text-sm font-extrabold font-mono ' + (inv.balanceDue > 0 ? 'text-rose-600' : 'text-emerald-600')}>
-                            Rs {inv.balanceDue.toFixed(2)}
-                          </span>
-                        </div>
-                      </div>
-
-                      <p className="text-xs text-slate-400 pt-3 mt-3 border-t border-slate-100 flex justify-between font-medium">
-                        <span>{inv.items.length} item(s) {inv.gstRate > 0 ? `• GST ${inv.gstRate}%` : '• Non-GST'}</span>
-                        <span className="font-bold text-slate-900 font-mono">Total: Rs {inv.total.toFixed(2)}</span>
-                      </p>
+                      <p className="font-bold text-xs text-slate-900">{c.name}</p>
+                      <p className="text-xs text-indigo-600 font-bold mt-0.5 font-mono">Rs {c.price.toFixed(2)}</p>
                     </div>
-
-                    <div className="space-y-2 pt-2">
-                      <div className="grid grid-cols-2 gap-2">
-                        <button
-                          onClick={() => handleStartEdit(inv)}
-                          className="bg-slate-50 hover:bg-slate-100 text-slate-700 text-[11px] font-semibold py-2.5 rounded-2xl flex items-center justify-center gap-1 border border-slate-200 transition shadow-sm"
-                        >
-                          <Edit3 className="w-3.5 h-3.5 text-indigo-600" /> Edit Bill
-                        </button>
-                        
-                        <button
-                          onClick={() => handleDownloadPdf(inv)}
-                          className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:opacity-95 text-white text-[11px] font-semibold py-2.5 rounded-2xl flex items-center justify-center gap-1 transition shadow-sm"
-                        >
-                          <Download className="w-3.5 h-3.5" /> Download PDF
-                        </button>
-
-                        <button
-                          onClick={() => sendWhatsApp(inv)}
-                          className="w-full col-span-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-semibold py-2.5 rounded-2xl flex items-center justify-center gap-1.5 border border-emerald-200 transition shadow-sm"
-                        >
-                          <Send className="w-4 h-4 text-emerald-600" /> Send on WhatsApp 💬
-                        </button>
-                      </div>
-
-                      {inv.balanceDue > 0 && (
-                        <button
-                          onClick={() => sendPaymentReminder(inv)}
-                          className="w-full bg-rose-50 hover:bg-rose-100 text-rose-800 text-xs font-semibold py-2.5 rounded-2xl flex items-center justify-center gap-1.5 border border-rose-200 transition shadow-sm"
-                        >
-                          <Bell className="w-3.5 h-3.5 text-rose-600 animate-bounce" /> Send Payment Reminder (Rs {inv.balanceDue.toFixed(2)})
-                        </button>
-                      )}
+                    <div className="flex items-center gap-4">
+                      <span className={`text-xs font-extrabold px-3 py-1 rounded-xl font-mono ${c.stock <= 5 ? 'bg-rose-50 text-rose-600 border border-rose-200' : 'bg-emerald-50 text-emerald-600 border border-emerald-200'}`}>
+                        Stock: {c.stock} {c.stock <= 5 ? '⚠️ Low' : ''}
+                      </span>
+                      <button onClick={() => setCatalog(catalog.filter(x => x.id !== c.id))} className="text-rose-500 p-2 hover:bg-rose-50 rounded-xl transition">
+                        <Trash2 className="w-4 h-4" />
+                      </button>
                     </div>
-
                   </div>
                 ))}
               </div>
             )}
-
-          </div>
-        )}
-
-        {activeTab === 'settings' && (
-          <div className="space-y-4 md:grid md:grid-cols-2 md:gap-6 md:space-y-0">
-            <div className="bg-white p-6 md:p-8 rounded-3xl border border-slate-200/80 shadow-sm space-y-4">
-              <h2 className="font-bold text-slate-900 text-xs uppercase tracking-wider flex items-center gap-2">
-                <Settings className="w-4 h-4 text-indigo-600" /> Showroom Settings
-              </h2>
-              <div className="space-y-3.5">
-                <div>
-                  <label className="text-xs text-slate-600 font-semibold block mb-1">Showroom / Business Name</label>
-                  <input
-                    type="text"
-                    placeholder="e.g. Sharma Hardware"
-                    value={shop.name}
-                    onChange={(e) => setShop({ ...shop, name: e.target.value })}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3.5 text-sm text-slate-900 font-medium outline-none shadow-inner focus:border-indigo-600"
-                  />
-                </div>
-                <div>
-                  <label className="text-xs text-slate-600 font-semibold block mb-1">Category / Tagline</label>
-                  <input
-                    type="text"
-                    placeholder="e.g. Paints & Sanitary"
-                    value={shop.category}
-                    onChange={(e) => setShop({ ...shop, category: e.target.value })}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3.5 text-sm text-slate-900 font-medium outline-none shadow-inner focus:border-indigo-600"
-                  />
-                </div>
-                <div>
-                  <label className="text-xs text-slate-600 font-semibold block mb-1">GSTIN Number (Optional)</label>
-                  <input
-                    type="text"
-                    placeholder="e.g. 21AAAAA0000A1Z5"
-                    value={shop.gstin}
-                    onChange={(e) => setShop({ ...shop, gstin: e.target.value })}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3.5 text-sm text-slate-900 font-medium uppercase font-mono shadow-inner focus:border-indigo-600"
-                  />
-                </div>
-                <div>
-                  <label className="text-xs text-slate-600 font-semibold block mb-1">Phone Number</label>
-                  <input
-                    type="text"
-                    placeholder="e.g. 9876543210"
-                    value={shop.phone}
-                    onChange={(e) => setShop({ ...shop, phone: e.target.value })}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3.5 text-sm text-slate-900 font-medium outline-none shadow-inner focus:border-indigo-600 font-mono"
-                  />
-                </div>
-                <div>
-                  <label className="text-xs text-slate-600 font-semibold block mb-1">Shop Address</label>
-                  <input
-                    type="text"
-                    placeholder="e.g. Main Market Road"
-                    value={shop.address}
-                    onChange={(e) => setShop({ ...shop, address: e.target.value })}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3.5 text-sm text-slate-900 font-medium outline-none shadow-inner focus:border-indigo-600"
-                  />
-                </div>
-                <div>
-                  <label className="text-xs text-slate-600 font-semibold block mb-1">Shopkeeper's Personal UPI ID (For Bill Scanner)</label>
-                  <input
-                    type="text"
-                    placeholder="e.g. shopowner@paytm"
-                    value={shop.upi}
-                    onChange={(e) => setShop({ ...shop, upi: e.target.value })}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3.5 text-sm text-slate-900 font-mono font-medium outline-none shadow-inner focus:border-indigo-600"
-                  />
-                </div>
-
-                <button
-                  onClick={() => { alert('Settings Saved Successfully!'); setActiveTab('billing'); }}
-                  className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:opacity-95 text-white py-4 rounded-2xl font-bold text-xs mt-2 shadow-md shadow-indigo-600/25 active:scale-[0.98] transition"
-                >
-                  Save Settings
-                </button>
-              </div>
-            </div>
-
-            <div className="bg-white p-6 md:p-8 rounded-3xl border border-slate-200/80 shadow-sm space-y-4 h-fit">
-              <h3 className="font-bold text-slate-900 text-xs uppercase tracking-wider flex items-center gap-2">
-                <Download className="w-4 h-4 text-indigo-600" /> Data Backup & Restore (Multi-Device Sync)
-              </h3>
-              <p className="text-[11px] text-slate-400">
-                Mobile se backup download karke laptop par restore karein, ya laptop se mobile par! Data hamesha sync rahega.
-              </p>
-
-              <div className="flex gap-3">
-                <button
-                  onClick={() => {
-                    try {
-                      const backupData = { shop, catalog, invoices, version: '1.0' };
-                      const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
-                      const url = URL.createObjectURL(blob);
-                      const downloadAnchor = document.createElement('a');
-                      downloadAnchor.href = url;
-                      downloadAnchor.download = "skybill_pos_backup.json";
-                      document.body.appendChild(downloadAnchor);
-                      downloadAnchor.click();
-                      downloadAnchor.remove();
-                      URL.revokeObjectURL(url);
-                      
-                      alert('Backup Download Successful! Check your device Downloads folder.');
-                    } catch (err) {
-                      alert('Backup lene mein error aaya.');
-                    }
-                  }}
-                  className="flex-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 py-4 px-4 rounded-2xl text-xs font-bold flex items-center justify-center gap-2 active:scale-95 transition shadow-sm"
-                >
-                  📥 Download Backup
-                </button>
-
-                <label className="flex-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 py-4 px-4 rounded-2xl text-xs font-bold flex items-center justify-center gap-2 cursor-pointer active:scale-95 transition shadow-sm">
-                  📤 Restore Backup
-                  <input
-                    type="file"
-                    accept=".json"
-                    className="hidden"
-                    onChange={(e: any) => {
-                      const fileReader = new FileReader();
-                      if (e.target.files && e.target.files[0]) {
-                        fileReader.readAsText(e.target.files[0], "UTF-8");
-                        fileReader.onload = (event: any) => {
-                          try {
-                            const parsedData = JSON.parse(event.target?.result as string);
-                            if (parsedData && parsedData.invoices) {
-                              setShop(parsedData.shop || shop);
-                              setCatalog(parsedData.catalog || catalog);
-                              setInvoices(parsedData.invoices || invoices);
-                              alert('Data Successfully Restored!');
-                              window.location.reload();
-                            } else {
-                              alert('Invalid backup file format!');
-                            }
-                          } catch (err) {
-                            alert('File read error!');
-                          }
-                        };
-                      }
-                    }}
-                  />
-                </label>
-              </div>
-            </div>
-          </div>
-        )}
-
-      </div>
-
-      {previewInvoice && (
-        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 overflow-y-auto backdrop-blur-sm pt-safe">
-          <div className="bg-white w-full max-w-xl rounded-3xl p-4 shadow-2xl my-auto text-slate-900 border border-slate-100 relative mt-12">
-            
-            <div className="sticky top-0 bg-white z-20 pb-3 mb-2 border-b border-slate-200 flex justify-between items-center">
-              <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">Tax Invoice Preview</span>
-              <div className="flex gap-2">
-                <button 
-                  onClick={() => handleThermalPrint(previewInvoice)}
-                  className="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 rounded-xl text-xs font-extrabold flex items-center gap-1 shadow-md active:scale-95"
-                >
-                  <Printer className="w-4 h-4" /> Thermal Print
-                </button>
-                <button 
-                  onClick={() => setPreviewInvoice(null)}
-                  className="bg-rose-600 hover:bg-rose-700 text-white px-3 py-2 rounded-xl text-xs font-extrabold flex items-center gap-1.5 shadow-md active:scale-95"
-                >
-                  <X className="w-4 h-4" /> CLOSE
-                </button>
-              </div>
-            </div>
-
-            <div className="bg-white p-6 border border-slate-200 rounded-2xl font-sans text-xs text-slate-900">
-              <div className="flex justify-between items-start border-b-2 border-slate-900 pb-4">
-                <div>
-                  <h1 className="text-xl font-extrabold text-slate-900 tracking-tight">{shop.name}</h1>
-                  <p className="text-xs text-slate-600 font-semibold">{shop.category}</p>
-                  <p className="text-xs text-slate-600 max-w-xs mt-1 leading-snug">{shop.address}</p>
-                  <p className="text-xs text-slate-900 font-bold mt-1">Phone: {shop.phone}</p>
-                  {shop.gstin && <p className="text-xs font-bold text-slate-900 font-mono mt-0.5">GSTIN: {shop.gstin}</p>}
-                </div>
-                <div className="text-right">
-                  <span className="bg-slate-900 text-white font-bold px-3 py-1 text-sm rounded tracking-wider uppercase inline-block">
-                    TAX INVOICE
-                  </span>
-                  <p className="text-sm font-bold text-slate-900 mt-2">Invoice No: {previewInvoice.id}</p>
-                  <p className="text-xs text-slate-600 font-medium">Date: {previewInvoice.date}</p>
-                  <p className="text-xs text-slate-600 font-medium">Time: {previewInvoice.time}</p>
-                </div>
-              </div>
-
-              <div className="my-4 p-3 bg-slate-50 border border-slate-200 rounded-xl flex justify-between">
-                <div>
-                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Billed To (Customer):</span>
-                  <p className="text-sm font-extrabold text-slate-900 mt-0.5">{previewInvoice.customerName}</p>
-                  <p className="text-xs text-slate-600 font-medium">Contact: {previewInvoice.phone || 'N/A'}</p>
-                </div>
-                <div className="text-right">
-                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Place of Supply:</span>
-                  <p className="text-xs font-bold text-slate-900 mt-0.5">Local Supply (Intrastate)</p>
-                  <p className="text-xs text-slate-600">Reverse Charge: No</p>
-                </div>
-              </div>
-
-              <table className="w-full border-collapse mt-4">
-                <thead>
-                  <tr className="bg-slate-100 border border-slate-300 text-slate-900 text-xs uppercase font-bold">
-                    <th className="py-2 px-2 text-center w-10 border border-slate-300">#</th>
-                    <th className="py-2 px-3 text-left border border-slate-300">Item Description</th>
-                    <th className="py-2 px-2 text-center w-16 border border-slate-300">Qty</th>
-                    <th className="py-2 px-3 text-right w-24 border border-slate-300">Unit Rate (Rs)</th>
-                    <th className="py-2 px-3 text-right w-28 border border-slate-300">Total (Rs)</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {previewInvoice.items.map((it, idx) => (
-                    <tr key={idx} className="border border-slate-300">
-                      <td className="py-2 px-2 text-center text-slate-600 font-medium border border-slate-300">{idx + 1}</td>
-                      <td className="py-2 px-3 font-bold text-slate-900 border border-slate-300">{it.name}</td>
-                      <td className="py-2 px-2 text-center text-slate-900 font-semibold border border-slate-300">{it.qty}</td>
-                      <td className="py-2 px-3 text-right text-slate-900 font-semibold border border-slate-300">{it.price.toFixed(2)}</td>
-                      <td className="py-2 px-3 text-right font-extrabold text-slate-900 border border-slate-300">{(it.price * it.qty).toFixed(2)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-
-              <div className="grid grid-cols-2 gap-4 mt-4 items-start">
-                <div className="space-y-3">
-                  {shop.upi && previewInvoice.balanceDue > 0 && (
-                    <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl flex items-center gap-3">
-                      <img 
-                        src={getUpiQrUrl(shop.upi, previewInvoice.balanceDue, shop.name)} 
-                        alt="Shop UPI QR Code" 
-                        className="w-20 h-20 object-contain rounded border border-slate-300 bg-white p-1 shadow-sm"
-                      />
-                      <div>
-                        <span className="text-[10px] font-bold text-slate-700 uppercase">Scan to Pay Balance</span>
-                        <p className="font-mono text-xs font-bold text-slate-900">{shop.upi}</p>
-                        <p className="text-[10px] text-slate-500">Google Pay / PhonePe / Paytm</p>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                <div className="border border-slate-300 rounded-xl overflow-hidden bg-slate-50 shadow-sm">
-                  <div className="flex justify-between py-1.5 px-3 border-b border-slate-200">
-                    <span className="text-slate-600 font-semibold">Subtotal Amount:</span>
-                    <span className="font-bold text-slate-900">Rs {previewInvoice.subtotal.toFixed(2)}</span>
-                  </div>
-                  {previewInvoice.gstRate > 0 && previewInvoice.gst > 0 && (
-                    <div className="flex justify-between py-1.5 px-3 border-b border-slate-200 text-slate-600 font-semibold">
-                      <span>GST ({previewInvoice.gstRate}%):</span>
-                      <span>Rs {previewInvoice.gst.toFixed(2)}</span>
-                    </div>
-                  )}
-                  <div className="flex justify-between py-2 px-3 bg-slate-200/80 font-bold text-sm text-slate-900 border-b border-slate-300">
-                    <span>Grand Total:</span>
-                    <span>Rs {previewInvoice.total.toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between py-2 px-3 font-bold text-sm text-rose-800 bg-rose-50">
-                    <span>Balance Due:</span>
-                    <span>Rs {balanceDue.toFixed(2)}</span>
-                  </div>
-                </div>
-              </div>
-
-            </div>
-
-            <div className="grid grid-cols-2 gap-2 pt-3 border-t mt-2">
-              <button
-                onClick={() => handleDownloadPdf(previewInvoice)}
-                className="bg-slate-900 hover:bg-black text-white font-semibold py-3 rounded-2xl text-xs flex items-center justify-center gap-1.5 shadow-md"
-              >
-                <Download className="w-4 h-4" /> Download PDF
-              </button>
-              <button
-                onClick={() => sendWhatsApp(previewInvoice)}
-                className="gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-3 rounded-2xl text-xs flex items-center justify-center shadow-md"
-              >
-                <Send className="w-4 h-4" /> WhatsApp Details
-              </button>
-            </div>
-
           </div>
         </div>
       )}
 
-      {/* Mobile Bottom Navigation Bar */}
-      <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-slate-900/95 backdrop-blur-md border-t border-slate-800 flex justify-around py-3 shadow-2xl z-20 print:hidden px-2 rounded-t-2xl md:hidden">
-        <button
-          onClick={() => setActiveTab('billing')}
-          className={'flex flex-col items-center text-[10px] font-medium transition ' + (activeTab === 'billing' ? 'text-indigo-400 font-bold' : 'text-slate-400')}
-        >
-          <Receipt className="w-5 h-5 mb-0.5" /> New Bill
-        </button>
-        <button
-          onClick={() => setActiveTab('catalog')}
-          className={'flex flex-col items-center text-[10px] font-medium transition ' + (activeTab === 'catalog' ? 'text-indigo-400 font-bold' : 'text-slate-400')}
-        >
-          <Boxes className="w-5 h-5 mb-0.5" /> Catalog
-        </button>
-        <button
-          onClick={() => setActiveTab('history')}
-          className={'flex flex-col items-center text-[10px] font-medium transition ' + (activeTab === 'history' ? 'text-indigo-400 font-bold' : 'text-slate-400')}
-        >
-          <ClipboardList className="w-5 h-5 mb-0.5" /> History
-        </button>
-        <button
-          onClick={() => setActiveTab('settings')}
-          className={'flex flex-col items-center text-[10px] font-medium transition ' + (activeTab === 'settings' ? 'text-indigo-400 font-bold' : 'text-slate-400')}
-        >
-          <Settings className="w-5 h-5 mb-0.5" /> Settings
-        </button>
+      {activeTab === 'history' && (
+        <div className="space-y-4">
+          
+          <div className="bg-white p-6 md:p-8 rounded-3xl border border-slate-200/80 shadow-sm space-y-4">
+            <h2 className="font-bold text-slate-900 text-xs uppercase tracking-wider flex items-center gap-2">
+              <History className="w-4 h-4 text-indigo-600" /> Past Invoices
+            </h2>
+            <div className="relative">
+              <Search className="w-4 h-4 text-slate-400 absolute left-4 top-4" />
+              <input
+                type="text"
+                placeholder="Search by name, phone, or invoice #"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full bg-slate-50 border border-slate-200 rounded-2xl pl-11 pr-4 py-3 text-xs text-slate-900 font-medium outline-none shadow-inner focus:border-indigo-600"
+              />
+            </div>
+          </div>
+
+          {filteredInvoices.length === 0 ? (
+            <div className="bg-white p-8 rounded-3xl text-center text-xs text-slate-400 border border-slate-200/80 shadow-sm">
+              No invoice records found.
+            </div>
+          ) : (
+            <div className="md:grid md:grid-cols-2 lg:grid-cols-3 gap-6 space-y-4 md:space-y-0">
+              {filteredInvoices.map((inv) => (
+                <div key={inv.id} className="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-sm space-y-4 transition hover:shadow-md flex flex-col justify-between">
+                  
+                  <div>
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-bold text-slate-900 bg-slate-100 px-2.5 py-1 rounded-lg border border-slate-200 font-mono">
+                            {inv.id}
+                          </span>
+                          <span className="text-xs text-slate-400 font-medium">
+                            {inv.date} • {inv.time}
+                          </span>
+                        </div>
+                        <h3 className="font-semibold text-slate-900 text-sm mt-2">{inv.customerName}</h3>
+                        <p className="text-xs text-slate-400 font-medium font-mono">{inv.phone || 'No Phone'}</p>
+                      </div>
+
+                      <div className="text-right">
+                        <span className="text-[10px] text-slate-400 block uppercase font-semibold">Balance Due</span>
+                        <span className={'text-sm font-extrabold font-mono ' + (inv.balanceDue > 0 ? 'text-rose-600' : 'text-emerald-600')}>
+                          Rs {inv.balanceDue.toFixed(2)}
+                        </span>
+                      </div>
+                    </div>
+
+                    <p className="text-xs text-slate-400 pt-3 mt-3 border-t border-slate-100 flex justify-between font-medium">
+                      <span>{inv.items.length} item(s) {inv.gstRate > 0 ? `• GST ${inv.gstRate}%` : '• Non-GST'}</span>
+                      <span className="font-bold text-slate-900 font-mono">Total: Rs {inv.total.toFixed(2)}</span>
+                    </p>
+                </div>
+
+                <div className="space-y-2 pt-2">
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      onClick={() => handleStartEdit(inv)}
+                      className="bg-slate-50 hover:bg-slate-100 text-slate-700 text-[11px] font-semibold py-2.5 rounded-2xl flex items-center justify-center gap-1 border border-slate-200 transition shadow-sm"
+                    >
+                      <Edit3 className="w-3.5 h-3.5 text-indigo-600" /> Edit Bill
+                    </button>
+                    
+                    <button
+                      onClick={() => handleDownloadPdf(inv)}
+                      className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:opacity-95 text-white text-[11px] font-semibold py-2.5 rounded-2xl flex items-center justify-center gap-1 transition shadow-sm"
+                    >
+                      <Download className="w-3.5 h-3.5" /> Download PDF
+                    </button>
+
+                    <button
+                      onClick={() => sendWhatsApp(inv)}
+                      className="w-full col-span-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-semibold py-2.5 rounded-2xl flex items-center justify-center gap-1.5 border border-emerald-200 transition shadow-sm"
+                    >
+                      <Send className="w-4 h-4 text-emerald-600" /> Send on WhatsApp 💬
+                    </button>
+                  </div>
+
+                  {inv.balanceDue > 0 && (
+                    <button
+                      onClick={() => sendPaymentReminder(inv)}
+                      className="w-full bg-rose-50 hover:bg-rose-100 text-rose-800 text-xs font-semibold py-2.5 rounded-2xl flex items-center justify-center gap-1.5 border border-rose-200 transition shadow-sm"
+                    >
+                      <Bell className="w-3.5 h-3.5 text-rose-600 animate-bounce" /> Send Payment Reminder (Rs {inv.balanceDue.toFixed(2)})
+                    </button>
+                  )}
+                </div>
+
+              </div>
+            ))}
+          </div>
+        )}
+
       </div>
+    )}
+
+    {activeTab === 'settings' && (
+      <div className="space-y-4 md:grid md:grid-cols-2 md:gap-6 md:space-y-0">
+        <div className="bg-white p-6 md:p-8 rounded-3xl border border-slate-200/80 shadow-sm space-y-4">
+          <h2 className="font-bold text-slate-900 text-xs uppercase tracking-wider flex items-center gap-2">
+            <Settings className="w-4 h-4 text-indigo-600" /> Showroom Settings
+          </h2>
+          <div className="space-y-3.5">
+            <div>
+              <label className="text-xs text-slate-600 font-semibold block mb-1">Showroom / Business Name</label>
+              <input
+                type="text"
+                placeholder="e.g. Sharma Hardware"
+                value={shop.name}
+                onChange={(e) => setShop({ ...shop, name: e.target.value })}
+                className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3.5 text-sm text-slate-900 font-medium outline-none shadow-inner focus:border-indigo-600"
+              />
+            </div>
+            <div>
+              <label className="text-xs text-slate-600 font-semibold block mb-1">Category / Tagline</label>
+              <input
+                type="text"
+                placeholder="e.g. Paints & Sanitary"
+                value={shop.category}
+                onChange={(e) => setShop({ ...shop, category: e.target.value })}
+                className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3.5 text-sm text-slate-900 font-medium outline-none shadow-inner focus:border-indigo-600"
+              />
+            </div>
+            <div>
+              <label className="text-xs text-slate-600 font-semibold block mb-1">GSTIN Number (Optional)</label>
+              <input
+                type="text"
+                placeholder="e.g. 21AAAAA0000A1Z5"
+                value={shop.gstin}
+                onChange={(e) => setShop({ ...shop, gstin: e.target.value })}
+                className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3.5 text-sm text-slate-900 font-medium uppercase font-mono shadow-inner focus:border-indigo-600"
+              />
+            </div>
+            <div>
+              <label className="text-xs text-slate-600 font-semibold block mb-1">Phone Number</label>
+              <input
+                type="text"
+                placeholder="e.g. 9876543210"
+                value={shop.phone}
+                onChange={(e) => setShop({ ...shop, phone: e.target.value })}
+                className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3.5 text-sm text-slate-900 font-medium outline-none shadow-inner focus:border-indigo-600 font-mono"
+              />
+            </div>
+            <div>
+              <label className="text-xs text-slate-600 font-semibold block mb-1">Shop Address</label>
+              <input
+                type="text"
+                placeholder="e.g. Main Market Road"
+                value={shop.address}
+                onChange={(e) => setShop({ ...shop, address: e.target.value })}
+                className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3.5 text-sm text-slate-900 font-medium outline-none shadow-inner focus:border-indigo-600"
+              />
+            </div>
+            <div>
+              <label className="text-xs text-slate-600 font-semibold block mb-1">Shopkeeper's Personal UPI ID (For Bill Scanner)</label>
+              <input
+                type="text"
+                placeholder="e.g. shopowner@paytm"
+                value={shop.upi}
+                onChange={(e) => setShop({ ...shop, upi: e.target.value })}
+                className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3.5 text-sm text-slate-900 font-mono font-medium outline-none shadow-inner focus:border-indigo-600"
+              />
+            </div>
+
+            <button
+              onClick={() => { alert('Settings Saved Successfully!'); setActiveTab('billing'); }}
+              className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:opacity-95 text-white py-4 rounded-2xl font-bold text-xs mt-2 shadow-md shadow-indigo-600/25 active:scale-[0.98] transition"
+            >
+              Save Settings
+            </button>
+          </div>
+        </div>
+
+        <div className="bg-white p-6 md:p-8 rounded-3xl border border-slate-200/80 shadow-sm space-y-4 h-fit">
+          <h3 className="font-bold text-slate-900 text-xs uppercase tracking-wider flex items-center gap-2">
+            <Download className="w-4 h-4 text-indigo-600" /> Data Backup & Restore (Multi-Device Sync)
+          </h3>
+          <p className="text-[11px] text-slate-400">
+            Mobile se backup download karke laptop par restore karein, ya laptop se mobile par! Data hamesha sync rahega.
+          </p>
+
+          <div className="flex gap-3">
+            <button
+              onClick={() => {
+                try {
+                  const backupData = { shop, catalog, invoices, version: '1.0' };
+                  const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
+                  const url = URL.createObjectURL(blob);
+                  const downloadAnchor = document.createElement('a');
+                  downloadAnchor.href = url;
+                  downloadAnchor.download = "skybill_pos_backup.json";
+                  document.body.appendChild(downloadAnchor);
+                  downloadAnchor.click();
+                  downloadAnchor.remove();
+                  URL.revokeObjectURL(url);
+                  
+                  alert('Backup Download Successful! Check your device Downloads folder.');
+                } catch (err) {
+                  alert('Backup lene mein error aaya.');
+                }
+              }}
+              className="flex-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 py-4 px-4 rounded-2xl text-xs font-bold flex items-center justify-center gap-2 active:scale-95 transition shadow-sm"
+            >
+              📥 Download Backup
+            </button>
+
+            <label className="flex-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 py-4 px-4 rounded-2xl text-xs font-bold flex items-center justify-center gap-2 cursor-pointer active:scale-95 transition shadow-sm">
+              📤 Restore Backup
+              <input
+                type="file"
+                accept=".json"
+                className="hidden"
+                onChange={(e: any) => {
+                  const fileReader = new FileReader();
+                  if (e.target.files && e.target.files[0]) {
+                    fileReader.readAsText(e.target.files[0], "UTF-8");
+                    fileReader.onload = (event: any) => {
+                      try {
+                        const parsedData = JSON.parse(event.target?.result as string);
+                        if (parsedData && parsedData.invoices) {
+                          setShop(parsedData.shop || shop);
+                          setCatalog(parsedData.catalog || catalog);
+                          setInvoices(parsedData.invoices || invoices);
+                          alert('Data Successfully Restored!');
+                          window.location.reload();
+                        } else {
+                          alert('Invalid backup file format!');
+                        }
+                      } catch (err) {
+                        alert('File read error!');
+                      }
+                    };
+                  }
+                }}
+              />
+            </label>
+          </div>
+        </div>
+      </div>
+    )}
 
     </div>
+
+    {previewInvoice && (
+      <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 overflow-y-auto backdrop-blur-sm pt-safe">
+        <div className="bg-white w-full max-w-xl rounded-3xl p-4 shadow-2xl my-auto text-slate-900 border border-slate-100 relative mt-12">
+          
+          <div className="sticky top-0 bg-white z-20 pb-3 mb-2 border-b border-slate-200 flex justify-between items-center">
+            <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">Tax Invoice Preview</span>
+            <div className="flex gap-2">
+              <button 
+                onClick={() => handleThermalPrint(previewInvoice)}
+                className="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 rounded-xl text-xs font-extrabold flex items-center gap-1 shadow-md active:scale-95"
+              >
+                <Printer className="w-4 h-4" /> Thermal Print
+              </button>
+              <button 
+                onClick={() => setPreviewInvoice(null)}
+                className="bg-rose-600 hover:bg-rose-700 text-white px-3 py-2 rounded-xl text-xs font-extrabold flex items-center gap-1.5 shadow-md active:scale-95"
+              >
+                <X className="w-4 h-4" /> CLOSE
+              </button>
+            </div>
+          </div>
+
+          <div className="bg-white p-6 border border-slate-200 rounded-2xl font-sans text-xs text-slate-900">
+            <div className="flex justify-between items-start border-b-2 border-slate-900 pb-4">
+              <div>
+                <h1 className="text-xl font-extrabold text-slate-900 tracking-tight">{shop.name}</h1>
+                <p className="text-xs text-slate-600 font-semibold">{shop.category}</p>
+                <p className="text-xs text-slate-600 max-w-xs mt-1 leading-snug">{shop.address}</p>
+                <p className="text-xs text-slate-900 font-bold mt-1">Phone: {shop.phone}</p>
+                {shop.gstin && <p className="text-xs font-bold text-slate-900 font-mono mt-0.5">GSTIN: {shop.gstin}</p>}
+              </div>
+              <div className="text-right">
+                <span className="bg-slate-900 text-white font-bold px-3 py-1 text-sm rounded tracking-wider uppercase inline-block">
+                  TAX INVOICE
+                </span>
+                <p className="text-sm font-bold text-slate-900 mt-2">Invoice No: {previewInvoice.id}</p>
+                <p className="text-xs text-slate-600 font-medium">Date: {previewInvoice.date}</p>
+                <p className="text-xs text-slate-600 font-medium">Time: {previewInvoice.time}</p>
+              </div>
+            </div>
+
+            <div className="my-4 p-3 bg-slate-50 border border-slate-200 rounded-xl flex justify-between">
+              <div>
+                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Billed To (Customer):</span>
+                <p className="text-sm font-extrabold text-slate-900 mt-0.5">{previewInvoice.customerName}</p>
+                <p className="text-xs text-slate-600 font-medium">Contact: {previewInvoice.phone || 'N/A'}</p>
+              </div>
+              <div className="text-right">
+                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Place of Supply:</span>
+                <p className="text-xs font-bold text-slate-900 mt-0.5">Local Supply (Intrastate)</p>
+                <p className="text-xs text-slate-600">Reverse Charge: No</p>
+              </div>
+            </div>
+
+            <table className="w-full border-collapse mt-4">
+              <thead>
+                <tr className="bg-slate-100 border border-slate-300 text-slate-900 text-xs uppercase font-bold">
+                  <th className="py-2 px-2 text-center w-10 border border-slate-300">#</th>
+                  <th className="py-2 px-3 text-left border border-slate-300">Item Description</th>
+                  <th className="py-2 px-2 text-center w-16 border border-slate-300">Qty</th>
+                  <th className="py-2 px-3 text-right w-24 border border-slate-300">Unit Rate (Rs)</th>
+                  <th className="py-2 px-3 text-right w-28 border border-slate-300">Total (Rs)</th>
+                </tr>
+              </thead>
+              <tbody>
+                {previewInvoice.items.map((it, idx) => (
+                  <tr key={idx} className="border border-slate-300">
+                    <td className="py-2 px-2 text-center text-slate-600 font-medium border border-slate-300">{idx + 1}</td>
+                    <td className="py-2 px-3 font-bold text-slate-900 border border-slate-300">{it.name}</td>
+                    <td className="py-2 px-2 text-center text-slate-900 font-semibold border border-slate-300">{it.qty}</td>
+                    <td className="py-2 px-3 text-right text-slate-900 font-semibold border border-slate-300">{it.price.toFixed(2)}</td>
+                    <td className="py-2 px-3 text-right font-extrabold text-slate-900 border border-slate-300">{(it.price * it.qty).toFixed(2)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+
+            <div className="grid grid-cols-2 gap-4 mt-4 items-start">
+              <div className="space-y-3">
+                {shop.upi && previewInvoice.balanceDue > 0 && (
+                  <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl flex items-center gap-3">
+                    <img 
+                      src={getUpiQrUrl(shop.upi, previewInvoice.balanceDue, shop.name)} 
+                      alt="Shop UPI QR Code" 
+                      className="w-20 h-20 object-contain rounded border border-slate-300 bg-white p-1 shadow-sm"
+                    />
+                    <div>
+                      <span className="text-[10px] font-bold text-slate-700 uppercase">Scan to Pay Balance</span>
+                      <p className="font-mono text-xs font-bold text-slate-900">{shop.upi}</p>
+                      <p className="text-[10px] text-slate-500">Google Pay / PhonePe / Paytm</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="border border-slate-300 rounded-xl overflow-hidden bg-slate-50 shadow-sm">
+                <div className="flex justify-between py-1.5 px-3 border-b border-slate-200">
+                  <span className="text-slate-600 font-semibold">Subtotal Amount:</span>
+                  <span className="font-bold text-slate-900">Rs {previewInvoice.subtotal.toFixed(2)}</span>
+                </div>
+                {previewInvoice.gstRate > 0 && previewInvoice.gst > 0 && (
+                  <div className="flex justify-between py-1.5 px-3 border-b border-slate-200 text-slate-600 font-semibold">
+                    <span>GST ({previewInvoice.gstRate}%):</span>
+                    <span>Rs {previewInvoice.gst.toFixed(2)}</span>
+                  </div>
+                )}
+                <div className="flex justify-between py-2 px-3 bg-slate-200/80 font-bold text-sm text-slate-900 border-b border-slate-300">
+                  <span>Grand Total:</span>
+                  <span>Rs {previewInvoice.total.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between py-2 px-3 font-bold text-sm text-rose-800 bg-rose-50">
+                  <span>Balance Due:</span>
+                  <span>Rs {balanceDue.toFixed(2)}</span>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <div className="grid grid-cols-2 gap-2 pt-3 border-t mt-2">
+            <button
+              onClick={() => handleDownloadPdf(previewInvoice)}
+              className="bg-slate-900 hover:bg-black text-white font-semibold py-3 rounded-2xl text-xs flex items-center justify-center gap-1.5 shadow-md"
+            >
+              <Download className="w-4 h-4" /> Download PDF
+            </button>
+            <button
+              onClick={() => sendWhatsApp(previewInvoice)}
+              className="gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-3 rounded-2xl text-xs flex items-center justify-center shadow-md"
+            >
+              <Send className="w-4 h-4" /> WhatsApp Details
+            </button>
+          </div>
+
+        </div>
+      </div>
+    )}
+
+    {/* Mobile Bottom Navigation Bar */}
+    <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-slate-900/95 backdrop-blur-md border-t border-slate-800 flex justify-around py-3 shadow-2xl z-20 print:hidden px-2 rounded-t-2xl md:hidden">
+      <button
+        onClick={() => setActiveTab('billing')}
+        className={'flex flex-col items-center text-[10px] font-medium transition ' + (activeTab === 'billing' ? 'text-indigo-400 font-bold' : 'text-slate-400')}
+      >
+        <Receipt className="w-5 h-5 mb-0.5" /> New Bill
+      </button>
+      <button
+        onClick={() => setActiveTab('catalog')}
+        className={'flex flex-col items-center text-[10px] font-medium transition ' + (activeTab === 'catalog' ? 'text-indigo-400 font-bold' : 'text-slate-400')}
+      >
+        <Boxes className="w-5 h-5 mb-0.5" /> Catalog
+      </button>
+      <button
+        onClick={() => setActiveTab('history')}
+        className={'flex flex-col items-center text-[10px] font-medium transition ' + (activeTab === 'history' ? 'text-indigo-400 font-bold' : 'text-slate-400')}
+      >
+        <ClipboardList className="w-5 h-5 mb-0.5" /> History
+      </button>
+      <button
+        onClick={() => setActiveTab('settings')}
+        className={'flex flex-col items-center text-[10px] font-medium transition ' + (activeTab === 'settings' ? 'text-indigo-400 font-bold' : 'text-slate-400')}
+      >
+        <Settings className="w-5 h-5 mb-0.5" /> Settings
+      </button>
+  </div>
+
+</div>
   );
 }
